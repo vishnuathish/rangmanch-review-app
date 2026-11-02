@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HttpException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select, func
 from models import Review, ReviewCreate, ReviewRead, ReviewUpdate
 from database import get_session
@@ -7,7 +7,7 @@ router = APIRouter(prefix='/review', tags=['review'])
 
 @router.post("/", response_model=ReviewRead)
 def create_review(review: ReviewCreate, session: Session = Depends(get_session)):
-    new_review = Review.from_orm(review)
+    new_review = Review.model_validate(review)
     session.add(new_review)
     session.commit()
     session.refresh(new_review)
@@ -35,7 +35,7 @@ def get_average_rating(play_name: str, session: Session = Depends(get_session)):
     avg_rating, total_reviews = result
 
     if total_reviews == 0:
-        raise HttpException(status_code=404, detail="No reviews found for this play.")
+        raise HTTPException(status_code=404, detail="No reviews found for this play.")
     return {"play_name": play_name, "average_rating": round (avg_rating, 2), "total_reviews": total_reviews}
 
 
@@ -43,7 +43,7 @@ def get_average_rating(play_name: str, session: Session = Depends(get_session)):
 def update_review(review_id: int, update: ReviewUpdate, session: Session = Depends(get_session)):
     review = session.get(Review, review_id)
     if not review:
-        raise HttpException(status_code=404, detail="Review not found.")
+        raise HTTPException(status_code=404, detail="Review not found.")
 
     update_data = update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -58,7 +58,7 @@ def update_review(review_id: int, update: ReviewUpdate, session: Session = Depen
 def delete_review(review_id: int, session: Session = Depends(get_session)):
     review = session.get(Review, review_id)
     if not review:
-        raise HttpException(status_code=404, detail="Review not found.")
+        raise HTTPException(status_code=404, detail="Review not found.")
     
     session.delete(review)
     session.commit()
